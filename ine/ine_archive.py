@@ -1,5 +1,7 @@
 import zipfile
 import re
+import os
+from sys import platform
 
 
 class INEArchive:
@@ -12,7 +14,7 @@ class INEArchive:
 
     def __init__(self, archive_name):
         """
-        Initiate INE Archive
+        Initiate INE ZIP Archive containing multiple LAB configurations located in folders and subfolders
 
         Args:
             archive_name (str): Full path to INE workbook archive file (.zip file)
@@ -20,13 +22,62 @@ class INEArchive:
         self.archive_name = archive_name
 
 
-    def get_lab_tree(self, category_filter="", project_filter=""):
+    def lab_select_menu(self):
+        # Display menu for categories
+        lab_tree = list(self._get_lab_tree())
+        # Check if categories exist
+        if len(lab_tree) != 0:
+            while True:
+                self._clear_screen()
+                for cat_id, category_name in enumerate(lab_tree, start=1):
+                    print(f"{cat_id}. {category_name}")
+                lab_category = input(f"Please select LAB category [1-{len(lab_tree)}]: ")
+                try:
+                    lab_category = lab_tree[int(lab_category)-1]
+                    break
+                except:
+                    input(f"[ERROR] You type : {lab_category}, we expect an integer between 1 and {len(lab_tree)}")
+        else:
+            print(f"[ERROR] Unable to get category list inside {self.archive_name}")
+
+        # Display menu for labs
+        lab_tree = list(self._get_lab_tree()[lab_category])
+        # Check if labs exists inside archive
+        if len(lab_tree) != 0:
+            while True:
+                for lab_id, lab_name in enumerate(lab_tree, start=1):
+                    print(f"{lab_id}. {lab_name}")
+                lab_name = input(f"Please select LAB name [1-{len(lab_tree)}]: ")
+                try:
+                    lab_name = lab_tree[int(lab_name)-1]
+                    break
+                except:
+                    input(f"[ERROR] You type : {lab_name}, we expect an integer between 1 and {len(lab_tree)}")
+        else:
+            print(f"[ERROR] Unable to get lab list inside {self.archive_name}")
+
+        project_files = self._get_lab_tree(category_filter=lab_category, lab_filter=lab_name)
+
+        return project_files
+
+
+    def _clear_screen(self):
+        """
+        Clear displayed infos on screen
+        """
+        if platform == "linux" or platform == "linux2" or platform == "darwin":
+            os.system('clear')
+        elif platform == "win32":
+            os.system('cls')
+
+
+    def _get_lab_tree(self, category_filter="", lab_filter=""):
         """
         Provides a tree for labs contained in the Zip Archive
 
         Args:
             category_filter (str, optional): Returns only categories matching this expression. Defaults to "".
-            project_filter (str, optional): Returns only projects matching this expression. Defaults to "".
+            lab_filter (str, optional): Returns only lab matching this expression. Defaults to "".
 
         Returns:
             dict: Tree of categories, labs and files contained in the Zip Archive
@@ -50,24 +101,25 @@ class INEArchive:
                 }
         """
         lab_tree = dict()
+        re_category = re.compile(category_filter)
+        re_lab = re.compile(lab_filter)
         # Open ZIP archive
         with zipfile.ZipFile(self.archive_name) as zip_file:
             for lab_files in self._get_files():
                 root, lab_category, lab_name, lab_file = lab_files.split("/")
-                # TODO : Check if category matches filter with REGEXP
-                # Create lab category in Tree
-                if not lab_tree.get(lab_category):
-                    lab_tree[lab_category] = dict()
-                # TODO : Check if lab name matches filter with REGEXP
-                # Create lab name in Tree
-                if not lab_tree[lab_category].get(lab_name):
-                    lab_tree[lab_category][lab_name] = list()
-                # Put all devices in lab name
-                router_cfg = self._get_file_content(zip_file, lab_files)
-                if lab_file.endswith(".txt"):
-                    router_name = lab_files.split(".")[0]
-                router_name = lab_file
-                lab_tree[lab_category][lab_name].append((router_name, router_cfg))
+                if re_category.match(lab_category) and re_lab.match(lab_name):
+                    # Create lab category in Tree
+                    if not lab_tree.get(lab_category) :
+                        lab_tree[lab_category] = dict()
+                    # Create lab name in Tree
+                    if not lab_tree[lab_category].get(lab_name):
+                        lab_tree[lab_category][lab_name] = list()
+                    # Put all devices in lab name
+                    router_cfg = self._get_file_content(zip_file, lab_files)
+                    if lab_file.endswith(".txt"):
+                        router_name = lab_files.split(".")[0]
+                    router_name = lab_file
+                    lab_tree[lab_category][lab_name].append((router_name, router_cfg))
         return lab_tree
 
 

@@ -10,6 +10,7 @@ __pycache__/
 eve_toolkit.py
 .vscode
 examples/*.zip
+examples/*
 
 # Distribution / packaging
 .Python
