@@ -8,6 +8,8 @@ __pycache__/
 
 # Misc
 eve_toolkit.py
+.vscode
+examples/*.zip
 
 # Distribution / packaging
 .Python
