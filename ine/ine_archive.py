@@ -22,7 +22,7 @@ class INEArchive:
         self.archive_name = archive_name
 
 
-    def lab_select_menu(self):
+    def lab_selector(self):
         # Display menu for categories
         lab_tree = list(self._get_lab_tree())
         # Check if categories exist

@@ -11,6 +11,7 @@ eve_toolkit.py
 .vscode
 examples/*.zip
 examples/*
+test.py
 
 # Distribution / packaging
 .Python
